@@ -6,6 +6,6 @@
 
 ## Authors
 
-[Riccardo Berni] (r.berni@studenti.unipi.it)
-[Elia Boccini] ()
-[Alessandro Guerriero] (a.guerriero3@studenti.unipi.it)
+- [Riccardo Berni] (r.berni@studenti.unipi.it)
+- [Elia Boccini] ()
+- [Alessandro Guerriero] (a.guerriero3@studenti.unipi.it)
