@@ -1,5 +1,7 @@
 # Pokemon VGC AI Competition
 
+This project is based on the framework provided for the pokemon vgc ai competition (https://gitlab.com/DracoStriker/pokemon-vgc-engine)
+
 ## Battle track
 
 ## VGC Track
