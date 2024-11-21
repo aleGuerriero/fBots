@@ -20,10 +20,15 @@ class Node(namedtuple('NodeBase',['a', 'g', 'parent', 'depth', 'eval'])):
   
   def __repr__(self):
     return f'Node(action={self.a}, value={self.eval})'
+  
+def game_state_eval(g: GameState):
+  my_active = g.teams[0].active
+  opp_active = g.teams[0].active
+  return my_active.hp/my_active.max_hp - opp_active.hp/opp_active.max_hp
 
 class FirstPlayer(BattlePolicy):
 
-  def __init__(self, max_depth: int = 4):
+  def __init__(self, max_depth: int = 3):
     self.max_depth = max_depth
 
   def get_action(self, g: Union[List[float], GameState]) -> int:
@@ -32,4 +37,4 @@ class FirstPlayer(BattlePolicy):
     node_queue: List[Node] = [root]
 
     while len(node_queue) > 0 and node_queue[0].depth < self.max_depth:
-      pass
+      curr_parent = node_queue.pop(0)
