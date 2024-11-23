@@ -68,6 +68,20 @@ class MyVGCBattlePolicy(BattlePolicy):
 # -------------------------- se il caso base non è sufficiente procedo con una strategia approfondita -----------------------
 
 
+        
+        '''
+        # verifico se il mio pkm è in condizione di vantaggio rispetto al pkm avversario e di quanto
+        # se è in una condizione di svantaggio valuto il cambio
+
+        
+        match_up_coeff = better_match_up_eval(my_active.type, opp_active_type, my_active.moves)
+
+        # se il coefficiente è molto negativo il cambio è quasi obbligato, non sto nemmeno a verificare una possibile sequenza di mosse
+        if match_up_coeff < -1.:
+            #controllo il match up degli altri pkm nel team e scelgo
+            return #switch
+        '''
+
 
         root: BFSNode = BFSNode()
         root.g = g
@@ -78,10 +92,24 @@ class MyVGCBattlePolicy(BattlePolicy):
             o: GameState = deepcopy(current_parent.g)
             # opponent must see the teams swapped
             o.teams = (o.teams[1], o.teams[0])
+            # IMPORTANTE: PER L'AVVERSARIO POSSO PROVARE AD UTILIZZARE UNA POLICY DIVERSA DAL TYPE_SELECTOR
             j = self.core_agent.get_action(o)
             # expand nodes with TypeSelector strategy plus non-damaging moves
-            for i in [self.core_agent.get_action(current_parent.g)] + [i for i, m in enumerate(
-                    current_parent.g.teams[0].active.moves) if m.power == 0.]:
+            moves = []
+            # PRUNING: controllo il match up e se risultasse essere molto negativo non provo nemmeno ad esplorare le mosse e tento gli switch
+            active_match_up = better_match_up_eval(my_active.type, opp_active_type, list(map(lambda m: m.type, my_active.moves)), list(map(lambda m: m.type, [move for move in opp_active.moves if move.name!=None])))
+            pkm1_match_up = better_match_up_eval(my_team.party[0].type, opp_active_type, list(map(lambda m: m.type, my_team.party[0].moves)), list(map(lambda m: m.type, [move for move in opp_active.moves if move.name!=None])))
+            pkm2_match_up = better_match_up_eval(my_team.party[1].type, opp_active_type, list(map(lambda m: m.type, my_team.party[1].moves)), list(map(lambda m: m.type, [move for move in opp_active.moves if move.name!=None])))
+            if  active_match_up >= -1. or (active_match_up < -1. and not (pkm1_match_up > active_match_up or pkm2_match_up > active_match_up)):
+                moves = [self.core_agent.get_action(current_parent.g)]+[i for i, m in enumerate(current_parent.g.teams[0].active.moves) if m.power == 0.]# dovrebbero esserci anche gli switch 
+            else:         
+                if pkm1_match_up > active_match_up:
+                    moves.append(4)
+                if pkm2_match_up > active_match_up:
+                    moves.append(5)
+
+
+            for i in moves:
                 g = deepcopy(current_parent.g)
                 s, _, _, _, _ = g.step([i, j])
                 # our fainted increased, skip
@@ -182,7 +210,30 @@ def canDefeat(attack1:int, defense2:int, pkm1:Pkm, pkm2:Pkm, weather:WeatherCond
             return True
         return False
         
+# funzione che controlla il vantaggio del mio pkm sull'altro
+# se conoscessi le mosse dell'avversario sarebbe molto meglio!!!!!!!
+# per valori di ritorno molto negativi è conveniente cambiare pokemon
 
+
+def better_match_up_eval(my_pkm_type: PkmType, opp_pkm_type: PkmType, my_moves_type: List[PkmType], opp_moves_type: List[PkmType]) -> float:
+    # controllo quanto l'avversario è in vantaggio in attacco
+    my_resistance = 0.0
+    for mtype in opp_moves_type+[opp_pkm_type]:
+        bonus = TYPE_CHART_MULTIPLIER[mtype][my_pkm_type]
+        if mtype==opp_moves_type:
+            bonus = bonus*1.5
+        my_resistance = max(bonus, my_resistance)
+    
+    
+    # controllo quanto il mio pkm è in vantaggio in attacco
+    my_offensivity = 0.0
+    for mtype in my_moves_type:
+        bonus = TYPE_CHART_MULTIPLIER[mtype][opp_pkm_type]
+        if mtype==my_pkm_type:
+            bonus = bonus*1.5
+        my_offensivity = max(bonus, my_offensivity)
+
+    return my_offensivity-my_resistance
 
 
 def match_up_eval(my_pkm_type: PkmType, opp_pkm_type: PkmType, opp_moves_type: List[PkmType]) -> float:
@@ -191,7 +242,7 @@ def match_up_eval(my_pkm_type: PkmType, opp_pkm_type: PkmType, opp_moves_type: L
     for mtype in opp_moves_type + [opp_pkm_type]:
         defensive_match_up = max(TYPE_CHART_MULTIPLIER[mtype][my_pkm_type], defensive_match_up)
     return defensive_match_up
-    
+
         
 
 class BFSNode:
@@ -247,7 +298,7 @@ class TypeSelector(BattlePolicy):
         # get most damaging move from my active pokémon
         damage: List[float] = []
         for move in my_active.moves:
-            damage.append(calculate_damage(move.type, my_active.type, move.power, opp_active_type,
+            damage.append(calculate_damage(move, my_active.type, opp_active_type,
                                           my_attack_stage, opp_defense_stage, weather))
         move_id = int(np.argmax(damage))
 
