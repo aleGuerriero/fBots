@@ -2,11 +2,13 @@ from typing import Any, List, Union
 from copy import deepcopy
 
 import numpy as np
+import random
 
 from vgc.behaviour import BattlePolicy
 from vgc.datatypes.Types import PkmStatus
 from vgc.datatypes.Objects import GameState, PkmTeam, PkmType, Pkm
 from vgc.datatypes.Constants import DEFAULT_N_ACTIONS, TYPE_CHART_MULTIPLIER
+from vgc.competition.StandardPkmMoves import STANDARD_MOVE_ROSTER
 
 class Node():
 
@@ -43,6 +45,15 @@ def match_up_eval(my_pkm_type: PkmType,
   #print(f'OFFENSIVE MATCH UP: {offensive_match_up}')
     
   return offensive_match_up - defensive_match_up
+
+def estimate_move(pkm: Pkm) -> None:
+  for move_i in range(DEFAULT_N_ACTIONS-2):
+    if pkm.moves[move_i].name is not None:
+      if move_i == 0:
+        type_moves = [move for move in STANDARD_MOVE_ROSTER if move.type==pkm.type]
+        pkm.moves[move_i] = random.choice(type_moves)
+      else:
+        pkm.moves[move_i] = random.choice(STANDARD_MOVE_ROSTER)
 
 def stage_eval(team: PkmTeam) -> int:
   stage: int = 0
@@ -90,8 +101,9 @@ def n_fainted(team: PkmTeam) -> int:
 
 class AlphaBetaPolicy(BattlePolicy):
 
-  def __init__(self, max_depth: int = 6):
+  def __init__(self, max_depth: int = 6, seed: int = 69):
     self.max_depth = max_depth
+    random.seed(seed)
 
   def get_action(self, g: Union[List[float], GameState]) -> int:
     root: Node = Node()
@@ -165,6 +177,7 @@ class AlphaBetaPolicy(BattlePolicy):
       return game_state_eval(state), None
     value = np.inf
     for i in range(DEFAULT_N_ACTIONS):
+      estimate_move(state.teams[1].active)
       next_state, _, _, _, _ = state.step([node.action, i])
       next_node: Node = Node()
       next_node.parent = node
