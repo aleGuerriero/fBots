@@ -8,21 +8,15 @@ from vgc.datatypes.Objects import GameState, Pkm, Weather, PkmStat, PkmMove, Pkm
 from vgc.datatypes.Constants import DEFAULT_PKM_N_MOVES, DEFAULT_PARTY_SIZE, MAX_HIT_POINTS, TYPE_CHART_MULTIPLIER, DEFAULT_N_ACTIONS
 from vgc.competition.StandardPkmMoves import STANDARD_MOVE_ROSTER, Struggle
 
-class Node(namedtuple('NodeBase',['a', 'g', 'parent', 'depth', 'eval'])):
-  __slots__ = () # using __slots__ to keep it lightweight
-
-  def path(self) -> List[int]:
-    '''
-    Reconstruct the path from the start state to this node
-    '''
-    node, path = self, []
-    while node.parent is not None:
-      path.append(node.a)
-      node = node.parent
-    return path[::-1]
+class Node():
+  def __init__(self) -> None:
+    self.action: int = None
+    self.state: GameState = None
+    self.parent: Node = None
+    self.depth: int = 0
+    self.value: float = 0.0
   
-  def __repr__(self):
-    return f'Node(action={self.a}, value={self.eval})'
+    
    
 def assign_rnd_moves(pkm:Pkm):
    type = pkm.type
@@ -71,14 +65,80 @@ class FirstPlayer(BattlePolicy):
     best_move_scores: Additional scoring or evaluation metrics for the chosen move
   '''
 
-  def get_action(self, g: Union[List[float], GameState]) -> int:
-    root: Node = Node()
-    root.g = g
-    node_queue: List[Node] = [root]
+  def chose_better_move(self, g: GameState):
+    return alphaBeta_search(g)
 
-    while len(node_queue) > 0 and node_queue[0].depth < self.max_depth:
-      pass
+  def get_action(self, g: Union[List[float], GameState]) -> int:
+    myteam = g.teams[0]
+    opteam = g.teams[1]
+    print("\\\\\\\\\\\\\\\\\\")
+    print(myteam.active)
+    
+    for i in myteam.active.moves:
+       print(str(i))
+    print("\\\\\\\\\\\\\\\\\\")
+    print(opteam.active)
+    for i in opteam.active.moves:
+       print(str(i))
+    print("\\\\\\\\\\\\\\\\\\")
+
+    current_state = Node
+    
+    #to_move = self.chose_better_move()
+
+    a = 1
+    print("\\\\\\\\\\\\\\\\\\")
+    print(str(myteam.active.moves[a]))
+    return a
   
+
+
+  
+def alphaBeta_search(g: GameState) -> int:
+    value, move = max_value(g, -np.inf , np.inf)
+    return move
+
+def max_value(g: GameState, alpha:float, beta:float)->tuple[float,int]:
+  v = -np.inf
+  move = 0
+  for act in range(DEFAULT_N_ACTIONS):
+
+    v2, a2 = min_value(g, game_state_eval(g),alpha, beta)
+    if v2 > v:
+        v, move = v2, act
+        alpha = max(alpha, v)
+    if v >= beta:
+        return v, move
+  return v, move
+  
+def min_value(g: GameState, alpha:float, beta:float)->tuple[float,int]:
+  v = np.inf
+  move = 0
+  for act in range(DEFAULT_N_ACTIONS):
+    v2, a2 = max_value(g, alpha, beta)
+    if v2 < v: 
+      v, move = v2, act
+      beta = min(beta, v)
+    if v <= alpha:
+      return v, move
+    return v, move
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 def estimate_damage(move: PkmMove, pkm_type: PkmType, opp_pkm_type: PkmType,
                     attack_stage: int, defense_stage: int, weather: WeatherCondition) -> float:
     move_type: PkmType = move.type
@@ -103,3 +163,5 @@ def estimate_damage(move: PkmMove, pkm_type: PkmType, opp_pkm_type: PkmType,
     damage = type_rate * \
         stab * weather * stage * move_power
     return damage
+
+

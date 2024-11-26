@@ -12,7 +12,7 @@ def main():
   roster = RandomPkmRosterGenerator().gen_roster()
   tg = RandomTeamFromRoster(roster)
   c0 = fCompetitor('Player1')
-  c0._battle_policy = Minimax()
+ # c0._battle_policy = FirstPlayer() #Minimax()
   cm0 = CompetitorManager(c0)
   cm0.team = tg.get_team()
   c1 = fCompetitor('Player2')
