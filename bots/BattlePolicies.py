@@ -93,40 +93,6 @@ class AlphaBetaPolicy(BattlePolicy):
   def __init__(self, max_depth: int = 6):
     self.max_depth = max_depth
 
-  def get_better_move(weather: Weather,
-    my_pkm: Pkm, my_stage: list[PkmStat],
-    op_pkm: Pkm, op_stage: list[PkmStat]
-    ):
-      if my_pkm.hp == 0 or op_pkm.hp == 0:
-        return None, None,None #if one of the pkm is dead the battle ends
-      damages_list = []
-      for move_index, move in enumerate(my_pkm.moves):
-        if move.pp == 0:
-          move = Struggle #if the move has no more pp it uses Struggle (default) move
-        if move is Struggle or move.name is None:
-          continue
-        damage = estimate_damage(move, my_pkm.type, op_pkm.type,
-                                 my_stage[PkmStat.ATTACK], op_stage[PkmStat.DEFENSE], weather) 
-        damages_list.append((move_index, int(damage), move.acc, move)) #add the estimate damage into the damages_list
-      
-      if len(damages_list) == 0:
-          return None, None,None
-      
-      assign_rnd_moves(op_pkm)
-
-      move_i, min_turn, best_move_scores = get_better_first_move( #find the better first move between all possible moves
-        int(op_pkm.hp), damages_list, my_stage[PkmStat.SPEED] < op_stage[PkmStat.SPEED])
-
-      return move_i, min_turn, best_move_scores 
-  '''
-    move_i: Index of the best move in the player's move list.
-    min_turn: Number of turns required to faint the opponent using the selected move.
-    best_move_scores: Additional scoring or evaluation metrics for the chosen move
-  '''
-
-  def chose_better_move(self, g: GameState):
-    return alphaBeta_search(g)
-
   def get_action(self, g: Union[List[float], GameState]) -> int:
     root: Node = Node()
     root.gameState = g
