@@ -1,4 +1,4 @@
-from bots.BattlePolicies import FirstPlayer
+from bots.BattlePolicies import AlphaBetaPolicy
 
 from vgc.behaviour import BattlePolicy, TeamSelectionPolicy, TeamBuildPolicy
 from vgc.competition.Competitor import Competitor
@@ -9,7 +9,7 @@ class fCompetitor(Competitor):
 
   def __init__(self, name: str = 'fCompetitor'):
     self._name = name
-    self._battle_policy = FirstPlayer()
+    self._battle_policy = AlphaBetaPolicy(max_depth=4)
     self._team_selection_policy = FirstEditionTeamSelectionPolicy()
     self._team_build_policy = RandomTeamBuilder()
 
