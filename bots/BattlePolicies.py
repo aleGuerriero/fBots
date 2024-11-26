@@ -29,10 +29,15 @@ def assign_rnd_moves(pkm:Pkm):
    for i in pkm.moves:
       if pkm.moves[i] == None:
         pkm.moves[i] = random.choice([move for move in STANDARD_MOVE_ROSTER if move.type == type])
+  
+def game_state_eval(g: GameState):
+  my_active = g.teams[0].active
+  opp_active = g.teams[0].active
+  return my_active.hp/my_active.max_hp - opp_active.hp/opp_active.max_hp
 
 class FirstPlayer(BattlePolicy):
 
-  def __init__(self, max_depth: int = 4):
+  def __init__(self, max_depth: int = 3):
     self.max_depth = max_depth
 
   def get_better_move(weather: Weather,
