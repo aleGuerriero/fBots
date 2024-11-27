@@ -48,7 +48,7 @@ def match_up_eval(my_pkm_type: PkmType,
 
 def estimate_move(pkm: Pkm) -> None:
   for move_i in range(DEFAULT_N_ACTIONS-2):
-    if pkm.moves[move_i].name is not None:
+    if pkm.moves[move_i].name is None:
       if move_i == 0:
         type_moves = [move for move in STANDARD_MOVE_ROSTER if move.type==pkm.type]
         pkm.moves[move_i] = random.choice(type_moves)
@@ -82,13 +82,16 @@ def game_state_eval(g: GameState):
   opp_stage = stage_eval(opp_team)
   my_status = status_eval(my_active)
   opp_status = status_eval(opp_active)
+  fainted_advantage = (3 - n_fainted(my_team)) - (3 - n_fainted(opp_team))
+  hp_ratio = my_active.hp / my_active.max_hp - opp_active.hp / opp_active.max_hp
+  
+  late_game_factor = 4 if n_fainted(my_team) + n_fainted(opp_team) > 3 else 1.0
   return (match_up 
-          + my_active.hp/my_active.max_hp
-          - opp_active.hp/opp_active.max_hp
-          + 0.2*my_stage
-          - 0.2*opp_stage
-          + my_status
-          - opp_status)
+          + late_game_factor * hp_ratio
+          + 0.3*my_stage
+          - 0.3*opp_stage
+          + 7 * (my_status - opp_status)
+          + 2 * late_game_factor * fainted_advantage)
 
 def n_fainted(team: PkmTeam) -> int:
   fainted = 0
