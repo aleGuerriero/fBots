@@ -54,7 +54,7 @@ def match_up_eval(my_pkm_type: PkmType,
 
 def estimate_move(pkm: Pkm) -> None:
   for move_i in range(DEFAULT_N_ACTIONS-2):
-    if pkm.moves[move_i].name is not None:
+    if pkm.moves[move_i].name is None:
       if move_i == 0:
         type_moves = [move for move in STANDARD_MOVE_ROSTER if move.type==pkm.type]
         pkm.moves[move_i] = random.choice(type_moves)
