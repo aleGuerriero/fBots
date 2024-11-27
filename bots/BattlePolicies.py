@@ -1,3 +1,9 @@
+"""Provide an implementation of the battle policies.
+
+The module contains the following functions:
+- `game_state_eval(gameState)` - Returns an evaluation of the current state. Utility function in minimax algorithms.
+"""
+
 from typing import Any, List, Union
 from copy import deepcopy
 
@@ -100,6 +106,12 @@ def n_fainted(team: PkmTeam) -> int:
   return fainted
 
 class AlphaBetaPolicy(BattlePolicy):
+  """Implements an alpha-beta search policy.
+
+  Attributes:
+    max_depth (int): the maximum depth reachable from alpha-beta search in the exploration tree.
+    seed (int): the seed for random number generation.
+  """
 
   def __init__(self, max_depth: int = 6, seed: int = 69):
     self.max_depth = max_depth
@@ -126,6 +138,17 @@ class AlphaBetaPolicy(BattlePolicy):
       alpha: float = -np.inf,
       beta: float = np.inf
   ) -> int:
+    """Performs Alpha-Beta pruning starting from the root node.
+
+    Args:
+      root: The root node where the search begins.
+      alpha: The alpha value for pruning. Defaults to -inf.
+      beta: The beta value for pruning. Defaults to inf.
+
+    Returns:
+      int: The optimal action index.
+    """
+
     #print("ALPHA BETA SEARCH")
     value, move = self._max_value(root, alpha, beta)
     #print('---------------------------------')
@@ -139,6 +162,20 @@ class AlphaBetaPolicy(BattlePolicy):
       alpha: float,
       beta: float
   ) -> tuple[float, Union[int, None]]:
+    """Computes the maximum value of the current node using Alpha-Beta pruning.
+
+    This method recursively evaluates possible game states by simulating all
+    valid moves and returns the optimal move for the maximizing player.
+
+    Args:
+      node: The current node in the game tree.
+      alpha: The current alpha value for pruning.
+      beta: The current beta value for pruning.
+
+    Returns:
+      A tuple containing the best value and the corresponding action index.
+    """
+
     state: GameState = deepcopy(node.gameState)
     node.value = game_state_eval(state)
     # print('---------------------------------')
@@ -146,7 +183,9 @@ class AlphaBetaPolicy(BattlePolicy):
     # print('---------------------------------')
     # print(f'MY HP: {state.teams[1].active.hp}')
     # print(f'OPPONENT HP: {state.teams[1].active.hp}')
-    if state.teams[1].active.hp == 0 or state.teams[0].active.hp == 0 or node.depth >= self.max_depth:
+    if (state.teams[1].active.hp == 0
+        or state.teams[0].active.hp == 0
+        or node.depth >= self.max_depth):
       return game_state_eval(state), None
     value = -np.inf
     for i in range(DEFAULT_N_ACTIONS):
@@ -172,8 +211,24 @@ class AlphaBetaPolicy(BattlePolicy):
       alpha: float,
       beta: float
   ) -> tuple[float, Union[int, None]]:
+    """Computes the minimum value of the current node using Alpha-Beta pruning.
+
+    This method recursively evaluates possible game states by simulating all
+    valid moves and returns the optimal move for the minimizing player.
+
+    Args:
+      node: The current node in the game tree.
+      alpha: The current alpha value for pruning.
+      beta: The current beta value for pruning.
+
+    Returns:
+      A tuple containing the best value and the corresponding action index.
+    """
+
     state: GameState = deepcopy(node.gameState)
-    if state.teams[1].active.hp == 0 or state.teams[0].active.hp == 0 or node.depth >= self.max_depth:
+    if (state.teams[1].active.hp == 0
+        or state.teams[0].active.hp == 0
+        or node.depth >= self.max_depth):
       return game_state_eval(state), None
     value = np.inf
     for i in range(DEFAULT_N_ACTIONS):

@@ -1,4 +1,6 @@
 .vscode
+docs
+mkdocs.yml
 **/__pycache__
 hayo5.py
 Thunder_BattlePolicies.py
