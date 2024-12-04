@@ -69,7 +69,7 @@ def status_eval(pkm: Pkm) -> float:
   else:
     return 0
   
-def game_state_eval(g: GameState):
+def game_state_eval(g: GameState, depth:int):
   my_team = g.teams[0]
   opp_team  = g.teams[1]
   my_active: Pkm = my_team.active
@@ -85,13 +85,14 @@ def game_state_eval(g: GameState):
   fainted_advantage = (3 - n_fainted(my_team)) - (3 - n_fainted(opp_team))
   hp_ratio = my_active.hp / my_active.max_hp - opp_active.hp / opp_active.max_hp
   
-  late_game_factor = 4 if n_fainted(my_team) + n_fainted(opp_team) > 3 else 1.0
+  late_game_factor = 1 + 0.5 * (n_fainted(my_team) + n_fainted(opp_team))
   return (match_up 
           + late_game_factor * hp_ratio
-          + 0.3*my_stage
-          - 0.3*opp_stage
+          + 0.3 * my_stage
+          - 0.3 * opp_stage
           + 7 * (my_status - opp_status)
-          + 2 * late_game_factor * fainted_advantage)
+          + 10 * late_game_factor * fainted_advantage
+          - 10 * depth)
 
 def n_fainted(team: PkmTeam) -> int:
   fainted = 0
@@ -143,14 +144,14 @@ class AlphaBetaPolicy(BattlePolicy):
       beta: float
   ) -> tuple[float, Union[int, None]]:
     state: GameState = deepcopy(node.gameState)
-    node.value = game_state_eval(state)
+    node.value = game_state_eval(state, node.depth)
     # print('---------------------------------')
     # print(f'CURRENT NODE: {str(node)}')
     # print('---------------------------------')
     # print(f'MY HP: {state.teams[1].active.hp}')
     # print(f'OPPONENT HP: {state.teams[1].active.hp}')
     if state.teams[1].active.hp == 0 or state.teams[0].active.hp == 0 or node.depth >= self.max_depth:
-      return game_state_eval(state), None
+      return game_state_eval(state, node.depth), None
     value = -np.inf
     for i in range(DEFAULT_N_ACTIONS):
       next_node: Node = Node()
@@ -177,7 +178,7 @@ class AlphaBetaPolicy(BattlePolicy):
   ) -> tuple[float, Union[int, None]]:
     state: GameState = deepcopy(node.gameState)
     if state.teams[1].active.hp == 0 or state.teams[0].active.hp == 0 or node.depth >= self.max_depth:
-      return game_state_eval(state), None
+      return game_state_eval(state, node.depth), None
     value = np.inf
     for i in range(DEFAULT_N_ACTIONS):
       estimate_move(state.teams[1].active)

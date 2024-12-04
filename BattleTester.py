@@ -13,7 +13,7 @@ from vgc.util.generator.PkmTeamGenerators import RandomTeamFromRoster
 from vgc.behaviour.BattlePolicies import TerminalPlayer, Minimax, PrunedBFS
 
 def main():
-  n_matches: int = 5
+  n_matches: int = 10
   debug: bool = False
 
   c0 = fCompetitor('Player1')
@@ -38,16 +38,16 @@ def main():
         match.run()
         wins0 += match.winner() == 0
         total_wins += match.winner() == 0
-        pbar.set_description(f'Match won: {wins0}/{j}, Competitions won: {tot_wins}/{i}')
+        pbar.set_description(f'Matches won: {wins0}/{j}, Competitions won: {tot_wins}/{i}')
       tmp_team = cm0.team
       cm0.team = cm1.team
       cm1.team = tmp_team
-    print(f'Total wins: {wins0}')
+    print(f'\nTotal wins: {wins0}')
     # print(f'{match.cms[match.winner()].competitor.name} won')
     tot_wins += wins0 > 5
     tot_ties += wins0 == 5
 
-  print(f'{c0.name} won: {tot_wins}/{n_matches} competitions. Total battle wins: {total_wins}')
+  print(f'{c0.name} won {tot_wins}/{n_matches}, tied {tot_ties}/{n_matches} and lost {n_matches-tot_ties-tot_wins}/{n_matches} competitions. \nTotal battle wins: {total_wins}')
 
 if __name__=='__main__':
   main()
