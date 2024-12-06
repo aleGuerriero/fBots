@@ -22,10 +22,11 @@ def main():
   c1._battle_policy = ThunderPlayer()
   cm1 = CompetitorManager(c1)
   roster = RandomPkmRosterGenerator().gen_roster()
-
+  
+  total_wins = 0
   tot_wins: int = 0
   tot_ties: int = 0
-  for i in (pbar := tqdm(range(n_matches), desc='Battle won: 0/0, atch won: 0/0', leave=False)):
+  for i in (pbar := tqdm(range(n_matches), desc='Matches won: 0/0, Competitions won: 0/0', leave=False)):
     tg = RandomTeamFromRoster(roster)
     cm0.team = tg.get_team()
     cm1.team = tg.get_team()
@@ -37,16 +38,18 @@ def main():
         match = BattleMatch(cm0, cm1, debug=debug)
         match.run()
         wins0 += match.winner() == 0
-        pbar.set_description(f'Battle won: {wins0}/{j}, match won: 0/{i}')
+        total_wins += match.winner() == 0
+        pbar.set_description(f'Matches won: {wins0}/{j}, Competitions won: {tot_wins}/{i}')
       tmp_team = cm0.team
       cm0.team = cm1.team
       cm1.team = tmp_team
-    print(f'Total wins: {wins0}')
+    print(f'\nTotal wins: {wins0}')
     # print(f'{match.cms[match.winner()].competitor.name} won')
     tot_wins += wins0 > 5
     tot_ties += wins0 == 5
 
-  print(f'{c0.name} won: {tot_wins}/{n_matches} matches')
+  print(f'{c0.name} won {tot_wins}/{n_matches}, tied {tot_ties}/{n_matches} and lost {n_matches-tot_ties-tot_wins}/{n_matches} competitions. \nTotal battle wins: {total_wins}')
+
 
 if __name__=='__main__':
   main()
