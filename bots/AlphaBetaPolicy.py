@@ -1,3 +1,4 @@
+import math
 from typing import Any, List, Union
 from copy import deepcopy
 
@@ -6,7 +7,7 @@ import random
 
 from vgc.behaviour import BattlePolicy
 from vgc.datatypes.Types import PkmStatus, WeatherCondition, PkmStat
-from vgc.datatypes.Objects import GameState, PkmTeam, PkmType, Pkm, PkmMove
+from vgc.datatypes.Objects import GameState, PkmTeam, PkmType, Pkm, PkmMove, PkmStatus
 from vgc.datatypes.Constants import DEFAULT_N_ACTIONS, TYPE_CHART_MULTIPLIER
 from vgc.competition.StandardPkmMoves import STANDARD_MOVE_ROSTER
 
@@ -157,6 +158,8 @@ def n_fainted(team: PkmTeam) -> int:
 def calculate_damage(move: PkmMove, pkm_type: PkmType, opp_pkm_type: PkmType, attack_stage: int, defense_stage: int, weather: WeatherCondition) -> float:
     if move.pp <= 0:
       return 0
+    if move.name is None:
+      return 0
     move_type: PkmType = move.type
     move_power: float = move.power
     type_rate = TYPE_CHART_MULTIPLIER[move_type][opp_pkm_type]
@@ -214,9 +217,16 @@ def canDefeat(attack1:int, defense2:int, pkm1:Pkm, pkm2:Pkm, weather:WeatherCond
     # il controllo di accuratezza sarà da fare in seguito se occorre
     print(moves)
     if len(moves)>0:
-      moves.sort(reverse=True, key=lambda x : (x[3], x[2], x[1], x[0]))
+      moves.sort(reverse=True, key=lambda x : (x[3], x[2]))
     return moves
 
+def calculateDamages(attack1:int, defense2:int, pkm1:Pkm, pkm2:Pkm, weather:WeatherCondition):
+  moves = []
+  for i in range(0, len(pkm1.moves)):
+      damage = calculate_damage(pkm1.moves[i], pkm1.type, pkm2.type, attack1, defense2, weather)
+      moves.append((pkm1.moves.index(pkm1.moves[i]), damage, pkm1.moves[i].max_pp, pkm1.moves[i].acc, pkm1.moves[i].priority, pkm1.moves[i].status, pkm1.moves[i].target))
+  moves.sort(reverse=True, key=lambda x : (x[3], x[1], x[2]))
+  return moves
 
 class AlphaBetaPolicy(BattlePolicy):
 
@@ -239,7 +249,7 @@ class AlphaBetaPolicy(BattlePolicy):
     # print(g.teams[1])
     # print('---------------------------------')
 
-    # se conosco meno di 3 mosse non utilizzo minimax ma una più semplice
+    # se conosco meno di 2 mosse non utilizzo minimax ma una più semplice
     if known_opp_moves(g.teams[1].active)<2:
       print('ciaoooooooooooo')
       return self.simple_search(root.gameState)
@@ -282,18 +292,62 @@ class AlphaBetaPolicy(BattlePolicy):
         # se comunque l'avversario non può sconfiggermi con una mossa allora prendo la mia mossa che lo sconfigge
         if len(canDefeat(team1.stage[PkmStat.ATTACK], team0.stage[PkmStat.DEFENSE], team1.active, team0.active, weather))==0:
           return moves[0][0]
-        # se invece può sconfiggermi con una mossa e attacca prima cambio
-        #else:
 
-        
-    # se non lo batto con una mossa allora controllo se il mio pkm è in vantaggio di tipo
-    
-    print(n_fainted(team0))
-    
+
+    # se l'avversario può battermi con una mossa tento di infliggergli uno status se posso
+    if len(canDefeat(team1.stage[PkmStat.ATTACK], team0.stage[PkmStat.DEFENSE], team1.active, team0.active, weather))>0:
+      stateMoves = [m for m in my_active.moves if m.target==1 and (m.status==PkmStatus.CONFUSED or m.status==PkmStatus.PARALYZED or m.status==PkmStatus.SLEEP or m.status==PkmStatus.FROZEN)]
+      # se ho una qualche mossa di stato
+      if len(stateMoves) > 0:
+        # guardo se ce n'è una che addormenta o che congela, se si le prendo in ordine altrimenti ne prendo una qualsiasi
+        sleep = [my_active.moves.index(m) for m in stateMoves if m.status==PkmStatus.SLEEP]
+        ice = [my_active.moves.index(m) for m in stateMoves if m.status==PkmStatus.FROZEN]
+        if len(sleep) > 0:
+          return sleep[0]
+        elif len(ice)>0 and opp_active.type!=PkmType.ICE:
+          return ice[0]
+        else:
+          return my_active.moves.index(stateMoves[0])
+
+
+    # se non lo batto con una mossa controllo:
     # se sono in una situazione accettabile o ho il team esausto o sono in svantaggio ma non ho cambi migliori allora tengo il pkm in campo 
     if match_up >= 0.5 or n_fainted(team0)==2 or (match_up < 0.5 and not (pkm1_match_up > match_up or pkm2_match_up > match_up)):
-      # per ora usa un approccio greedy ma è da fare una simulazione di 2-3 turni con tutte le mosse
-      return int(np.argmax([calculate_damage(m, my_active.type, opp_active.type, team0.stage[PkmStat.ATTACK], team1.stage[PkmStat.DEFENSE], weather) for m in my_active.moves]))  
+      # calcolo i danni delle mie mosse
+      damages = calculateDamages(team0.stage[PkmStat.ATTACK], team1.stage[PkmStat.DEFENSE], team0.active, team1.active, weather)
+      # controllo se in 3 turni riesco a sconfiggere il nemico
+      beatMoves = [] 
+      for move in damages:
+        if move[1]*math.floor(3*move[3]) > opp_active.hp:
+          beatMoves.append(move)
+      # se non ho mosse che sconfiggerebbero il nemico in 3 turni controllo se ho delle mosse di stato
+      if len(beatMoves) == 0:
+        stateMoves = [m for m in damages if m[6]==1 and (m[5]==PkmStatus.CONFUSED or m[5]==PkmStatus.PARALYZED or m[5]==PkmStatus.SLEEP or m[5]==PkmStatus.FROZEN)]
+        # se ho una qualche mossa di stato
+        if len(stateMoves) > 0:
+          # guardo se ce n'è una che addormenta o che congela, se si le prendo in ordine altrimenti ne prendo una qualsiasi
+          sleep = [m[0] for m in stateMoves if m[5]==PkmStatus.SLEEP]
+          ice = [m[0] for m in stateMoves if m[5]==PkmStatus.FROZEN]
+          if len(sleep) > 0:
+            return sleep[0]
+          elif len(ice)>0 and opp_active.type!=PkmType.ICE:
+            return ice[0]
+          else:
+            return stateMoves[0][0]
+        # se non ho nemmeno mosse di stato prendo la mossa più potente che ho rapportata all'accuratezza
+        else: 
+          damages.sort(reverse=True, key=lambda x : (x[1]*x[3]))
+          return damages[0][0]
+      # se invece ho almeno una mossa che in 3 turni sconfigge il nemico allora prendo
+      else:
+        # riordino le beatMoves per prendere quella che fa più danno
+        # (anche se le mosse più potenti potrebbero essere poco accurate ma ci va bene perché è già stato considerato)
+        beatMoves.sort(reverse=True, key=lambda x : (x[1]))
+        return beatMoves[0][0]
+          
+      
+      # per ora uso un approccio greedy ma è da fare una simulazione di 2-3 turni con tutte le mosse
+      #return int(np.argmax([calculate_damage(m, my_active.type, opp_active.type, team0.stage[PkmStat.ATTACK], team1.stage[PkmStat.DEFENSE], weather) for m in my_active.moves]))  
     # altrimenti (comprende il caso in cui il pkm è in svantaggio e ho pkm migliori in squadra) faccio lo switch con il pkm migliore
     else:
       if pkm1_match_up >= pkm2_match_up:
