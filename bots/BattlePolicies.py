@@ -8,18 +8,20 @@ from typing import Any, List, Union
 from copy import deepcopy
 
 import numpy as np
+import cvxpy as cp
 import random
 
 from vgc.behaviour import BattlePolicy
 from vgc.datatypes.Types import PkmStatus
-from vgc.datatypes.Objects import GameState, PkmTeam, PkmType, Pkm
+from vgc.datatypes.Objects import GameState, PkmTeam, PkmType, Pkm, PkmMove, WeatherCondition
 from vgc.datatypes.Constants import DEFAULT_N_ACTIONS, TYPE_CHART_MULTIPLIER
 from vgc.competition.StandardPkmMoves import STANDARD_MOVE_ROSTER
 
 class Node():
 
   def __init__(self):
-    self.action: int = None
+    self.action: tuple[int, int] = None   # (row action, column action)
+    self.chosen_action: int = None
     self.gameState: GameState = None
     self.parent: Node = None
     self.depth: int = 0
@@ -27,6 +29,35 @@ class Node():
 
   def __str__(self):
     return f'Node(action: {self.action}, depth: {self.depth}, value: {self.value}, parent: {str(self.parent)})'
+  
+def estimate_damage(
+    move: PkmMove,
+    pkm_type: PkmType,
+    opp_pkm_type: PkmType,
+    attack_stage: int, defense_stage: int,
+    weather: WeatherCondition) -> float:
+  move_type: PkmType = move.type
+  move_power: float = move.power
+  type_rate = TYPE_CHART_MULTIPLIER[move_type][opp_pkm_type]
+  if type_rate == 0:
+    return 0
+  if move.fixed_damage > 0:
+    return move.fixed_damage
+  stab = 1.5 if move_type == pkm_type else 1.
+  if ((move_type == PkmType.WATER and weather == WeatherCondition.RAIN) 
+      or (move_type == PkmType.FIRE and weather == WeatherCondition.SUNNY)):
+    weather = 1.5
+  elif ((move_type == PkmType.WATER and weather == WeatherCondition.SUNNY) 
+      or (move_type == PkmType.FIRE and weather == WeatherCondition.RAIN)):
+    weather = .5
+  else:
+    weather = 1.
+  stage_level = attack_stage - defense_stage
+  stage = (stage_level + 2.) / 2 if stage_level >= 0. else 2. / \
+      (np.abs(stage_level) + 2.)
+  damage = type_rate * \
+      stab * weather * stage * move_power
+  return damage
   
 def match_up_eval(my_pkm_type: PkmType,
       opp_pkm_type: PkmType,
@@ -105,7 +136,7 @@ def n_fainted(team: PkmTeam) -> int:
     fainted += team.party[1].hp == 0
   return fainted
 
-class AlphaBetaPolicy(BattlePolicy):
+class SmabPolicy(BattlePolicy):
   """Implements an alpha-beta search policy.
 
   Attributes:
@@ -113,9 +144,9 @@ class AlphaBetaPolicy(BattlePolicy):
     seed (int): the seed for random number generation.
   """
 
-  def __init__(self, max_depth: int = 6, seed: int = 69):
+  def __init__(self, max_depth: int = 6, epsilon: float = 1e-16):
     self.max_depth = max_depth
-    random.seed(seed)
+    self.espilon = epsilon
 
   def get_action(self, g: Union[List[float], GameState]) -> int:
     root: Node = Node()
@@ -132,118 +163,117 @@ class AlphaBetaPolicy(BattlePolicy):
     action = self._alphaBeta_search(root)
     return action
 
-  def _alphaBeta_search(
+  def _smab(
       self,
-      root: Node,
+      node: Node,
       alpha: float = -np.inf,
-      beta: float = np.inf
-  ) -> int:
-    """Performs Alpha-Beta pruning starting from the root node.
-
-    Args:
-      root: The root node where the search begins.
-      alpha: The alpha value for pruning. Defaults to -inf.
-      beta: The beta value for pruning. Defaults to inf.
-
-    Returns:
-      int: The optimal action index.
-    """
-
-    #print("ALPHA BETA SEARCH")
-    value, move = self._max_value(root, alpha, beta)
-    #print('---------------------------------')
-    #print(f'AlphaBetaPolicy chose action: {root.gameState.teams[0].active.moves[move]}, with value: {value}')
-    #print('---------------------------------')
-    return move
-
-  def _max_value(
-      self,
-      node: Node,
-      alpha: float,
-      beta: float
-  ) -> tuple[float, Union[int, None]]:
-    """Computes the maximum value of the current node using Alpha-Beta pruning.
-
-    This method recursively evaluates possible game states by simulating all
-    valid moves and returns the optimal move for the maximizing player.
-
-    Args:
-      node: The current node in the game tree.
-      alpha: The current alpha value for pruning.
-      beta: The current beta value for pruning.
-
-    Returns:
-      A tuple containing the best value and the corresponding action index.
-    """
-
-    state: GameState = deepcopy(node.gameState)
-    node.value = game_state_eval(state)
-    # print('---------------------------------')
-    # print(f'CURRENT NODE: {str(node)}')
-    # print('---------------------------------')
-    # print(f'MY HP: {state.teams[1].active.hp}')
-    # print(f'OPPONENT HP: {state.teams[1].active.hp}')
-    if (state.teams[1].active.hp == 0
-        or state.teams[0].active.hp == 0
+      beta: float = np.inf) -> int:
+    
+    gameState: GameState = deepcopy(node.gameState)
+    
+    if (gameState.teams[1].active.hp == 0
+        or gameState.teams[0].active.hp == 0
         or node.depth >= self.max_depth):
-      return game_state_eval(state), None
-    value = -np.inf
-    for i in range(DEFAULT_N_ACTIONS):
-      next_node: Node = Node()
-      next_node.parent = node
-      next_node.depth = node.depth + 1
-      next_node.action = i
-      next_node.gameState = state
-      next_node.value, _ = self._min_value(next_node, alpha, beta)
-      # print('---------------------------------')
-      # print(f'NEXT NODE: {str(next_node)}')
-      # print('---------------------------------')
-      if next_node.value > value:
-        value, move = next_node.value, next_node.action
-        alpha = max(value, alpha)
-      if value >= beta:
-        return value, move
-    return value, move
-        
-  def _min_value(
+      return game_state_eval(gameState), node.chosen_action
+    
+    A: List[int] = list(range(DEFAULT_N_ACTIONS))
+    B: List[int] = list(range(DEFAULT_N_ACTIONS))
+    
+    P: np.ndarray = np.full((A, B), -np.inf)
+    O: np.ndarray = np.full((A, B), np.inf)
+
+    for a, b in zip(A, B):
+      if not self._is_dominated(a, b, P, O):
+        alpha_ab = self._compute_alpha(a, b, P, alpha)
+        beta_ab = self._compute_beta(a, b, O, beta)
+
+        next_state, _, _, _, _ = gameState.step([a, b])
+        child_node = Node()
+        child_node.parent = node
+        child_node.depth = node.depth + 1
+        child_node.action = (a, b)
+        child_node.gameState = next_state[0]
+
+        if alpha_ab >= beta_ab:
+          value, _ = self._smab(child_node, alpha_ab, alpha_ab + self.espilon)
+          if value <= alpha_ab:
+            A.remove(a)         # Prune row action
+          else:
+            B.remove(b)         # Prune column action
+        else:
+          value, _ = self._smab(child_node, alpha_ab, beta_ab)
+          if value <= alpha_ab:
+            A.remove(A)
+          elif value >= beta_ab:
+            B.remove(b)
+          else:
+            P[a, b] = O[a, b] = value
+    
+    restricted_P = P[np.ix_(A, B)]
+    nash_value, action = self._compute_nash(restricted_P)
+    node.parent.chosen_action = action
+    return nash_value, node.chosen_action
+
+  def _compute_nash(
       self,
-      node: Node,
-      alpha: float,
-      beta: float
-  ) -> tuple[float, Union[int, None]]:
-    """Computes the minimum value of the current node using Alpha-Beta pruning.
+      P: np.ndarray
+  ) -> tuple[float, int]:
+    rows, cols = P.shape
+    x = cp.Variable(rows, nonneg=True)
+    y = cp.Variable(cols, nonneg=True)
+    constraints = [cp.sum(x) == 1, cp.sum(y) == 1]
+    for i in range(rows):
+      constraints.append(x @ P[:, i] >= 0)
+    for j in range(cols):
+      constraints.append(y @ P[j, :] <= 0)
+    problem = cp.Problem(cp.Maximize(x @ P @ y.T), constraints)
+    problem.solve()
+    return problem.value, np.argmax(x.value)
 
-    This method recursively evaluates possible game states by simulating all
-    valid moves and returns the optimal move for the minimizing player.
+  def _compute_alpha(
+      self,
+      a: int,
+      b: int,
+      P: np.ndarray,
+      alpha: float
+  ) -> float:
+    rows, _ = P.shape
+    x = cp.Variable(rows, nonneg=True)
+    constraints = [x @ P[:, b] >= alpha, cp.sum(x)==1]
+    problem = cp.Problem(cp.Maximize(x @ P[:, b]), constraints)
+    problem.solve()
+    return max(alpha, problem.value)
+  
+  def _compute_beta(
+      self,
+      a: int,
+      b: int,
+      O: np.ndarray,
+      beta, float
+  ) -> float:
+    _, cols = O.shape
+    x = cp.Variable(cols, nonneg=True)
+    constraints = [O[a, :] @ x <= beta, cp.sum(x) == 1]
+    problem = cp.Problem(cp.Minimize(O[a, :] @ x), constraints)
+    problem.solve()
+    return min(beta, problem.value)
 
-    Args:
-      node: The current node in the game tree.
-      alpha: The current alpha value for pruning.
-      beta: The current beta value for pruning.
+  def _is_dominated(
+      self,
+      a: int,
+      b: int,
+      P: np.ndarray,
+      O: np.ndarray
+  ) -> bool:
+    
+    for other_a in range(P.shape[0]):
+      if (other_a != a 
+          and all(P[other_a, j] >= O[a, j] for j in range(P.shape[1]))):
+        return True
+      for other_b in range(P.shape[1]):
+        if (other_b != b 
+            and all(O[i, other_b] <= P[i, b] for i in range(P.shape[0]))):
+          return True
+      return False
 
-    Returns:
-      A tuple containing the best value and the corresponding action index.
-    """
-
-    state: GameState = deepcopy(node.gameState)
-    if (state.teams[1].active.hp == 0
-        or state.teams[0].active.hp == 0
-        or node.depth >= self.max_depth):
-      return game_state_eval(state), None
-    value = np.inf
-    for i in range(DEFAULT_N_ACTIONS):
-      estimate_move(state.teams[1].active)
-      next_state, _, _, _, _ = state.step([node.action, i])
-      next_node: Node = Node()
-      next_node.parent = node
-      next_node.depth = node.depth + 1
-      next_node.action = i
-      next_node.gameState = next_state[0]
-      next_node.value, _ = self._max_value(next_node, alpha, beta)
-      if next_node.value < value:
-        value, move = next_node.value, next_node.action
-        beta = min(value, beta)
-      if value <= alpha:
-        return value, move
-    return value, move
 

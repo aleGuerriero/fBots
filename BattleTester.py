@@ -1,6 +1,6 @@
 from tqdm import tqdm
 
-from bots.BattlePolicies import AlphaBetaPolicy
+from bots.BattlePolicies import SmabPolicy
 from bots.fCompetitor import fCompetitor
 from bots.Thunder_BattlePolicies import ThunderPlayer
 from bots.hayo5 import hayo5_BattlePolicy
@@ -13,7 +13,7 @@ from vgc.util.generator.PkmTeamGenerators import RandomTeamFromRoster
 from vgc.behaviour.BattlePolicies import TerminalPlayer, Minimax, PrunedBFS
 
 def main():
-  n_matches: int = 5
+  n_matches: int = 1
   debug: bool = False
 
   c0 = fCompetitor('Player1')

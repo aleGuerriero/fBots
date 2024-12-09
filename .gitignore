@@ -1,5 +1,6 @@
 .vscode
 docs
+site
 mkdocs.yml
 **/__pycache__
 hayo5.py
