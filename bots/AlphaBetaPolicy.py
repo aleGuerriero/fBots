@@ -100,7 +100,7 @@ def status_eval(pkm: Pkm) -> float:
   else:
     return 0
   
-def game_state_eval(g: GameState):
+def game_state_eval(g: GameState, depth:int):
   my_team = g.teams[0]
   opp_team  = g.teams[1]
   my_active: Pkm = my_team.active
@@ -113,13 +113,17 @@ def game_state_eval(g: GameState):
   opp_stage = stage_eval(opp_team)
   my_status = status_eval(my_active)
   opp_status = status_eval(opp_active)
+  fainted_advantage = (3 - n_fainted(my_team)) - (3 - n_fainted(opp_team))
+  hp_ratio = my_active.hp / my_active.max_hp - opp_active.hp / opp_active.max_hp
+  
+  late_game_factor = 1 + 0.5 * (n_fainted(my_team) + n_fainted(opp_team))
   return (match_up 
-          + my_active.hp/my_active.max_hp
-          - opp_active.hp/opp_active.max_hp
-          + 0.2*my_stage
-          - 0.2*opp_stage
-          + my_status
-          - opp_status)
+          + late_game_factor * hp_ratio
+          + 0.3 * my_stage
+          - 0.3 * opp_stage
+          + 7 * (my_status - opp_status)
+          + 10 * late_game_factor * fainted_advantage
+          - 10 * depth)
 
 
 def better_game_state_eval(g: GameState, depth: int):
@@ -142,7 +146,8 @@ def better_game_state_eval(g: GameState, depth: int):
           - 0.2*opp_stage
           + my_status
           - opp_status
-          - 0.3*depth)
+          - 0.3*math.ceil(depth/2)
+          + (my_team.party[0].hp/my_team.party[0].max_hp+my_team.party[1].hp/my_team.party[1].max_hp)*2)
 # AGGIUNGERE LA VITA DELLA SQUADRA tipo + (party[0].hp/party[0].max_hp+party[1].hp/party[1].max_hp)
 # ma noi possiamo vedere la vita del party avversario?????
 
@@ -228,7 +233,7 @@ def calculateDamages(attack1:int, defense2:int, pkm1:Pkm, pkm2:Pkm, weather:Weat
   moves.sort(reverse=True, key=lambda x : (x[3], x[1], x[2]))
   return moves
 
-class AlphaBetaPolicy(BattlePolicy):
+class newAlphaBetaPolicy(BattlePolicy):
 
   def __init__(self, max_depth: int = 6, seed: int = 69):
     self.max_depth = max_depth
@@ -383,14 +388,13 @@ class AlphaBetaPolicy(BattlePolicy):
       beta: float
   ) -> tuple[float, Union[int, None]]:
     state: GameState = deepcopy(node.gameState)
-    node.value = better_game_state_eval(state, node.depth)
     # print('---------------------------------')
     # print(f'CURRENT NODE: {str(node)}')
     # print('---------------------------------')
     # print(f'MY HP: {state.teams[1].active.hp}')
     # print(f'OPPONENT HP: {state.teams[1].active.hp}')
     if state.teams[1].active.hp == 0 or state.teams[0].active.hp == 0 or node.depth >= self.max_depth:
-      return better_game_state_eval(state, node.depth), None
+      return game_state_eval(state, node.depth), None
     value = -np.inf
     for i in range(DEFAULT_N_ACTIONS):
       next_node: Node = Node()
@@ -416,8 +420,6 @@ class AlphaBetaPolicy(BattlePolicy):
       beta: float
   ) -> tuple[float, Union[int, None]]:
     state: GameState = deepcopy(node.gameState)
-    if state.teams[1].active.hp == 0 or state.teams[0].active.hp == 0 or node.depth >= self.max_depth:
-      return better_game_state_eval(state, node.depth), None
     value = np.inf
     for i in range(DEFAULT_N_ACTIONS):
       next_state, _, _, _, _ = state.step([node.action, i])
