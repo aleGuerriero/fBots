@@ -1,6 +1,8 @@
 from tqdm import tqdm
 
-from bots.BattlePolicies import AlphaBetaPolicy
+from bots.AlphaBetaPolicy import AlphaBetaPolicy
+from bots.MixedPolicy import MixedPolicy
+from bots.GreedyPolicy import GreedyPolicy
 from bots.fCompetitor import fCompetitor
 from bots.Thunder_BattlePolicies import ThunderPlayer
 from bots.hayo5 import hayo5_BattlePolicy
@@ -13,10 +15,11 @@ from vgc.util.generator.PkmTeamGenerators import RandomTeamFromRoster
 from vgc.behaviour.BattlePolicies import TerminalPlayer, Minimax, PrunedBFS
 
 def main():
-  n_matches: int = 10
+  n_matches: int = 5
   debug: bool = False
 
   c0 = fCompetitor('Player1')
+  c0._battle_policy = AlphaBetaPolicy(max_depth=6)
   cm0 = CompetitorManager(c0)
   c1 = fCompetitor('Player2')
   c1._battle_policy = ThunderPlayer()
@@ -26,7 +29,6 @@ def main():
   total_wins = 0
   tot_wins: int = 0
   tot_ties: int = 0
-  for i in (pbar := tqdm(range(n_matches), desc='Matches won: 0/0, Competitions won: 0/0', leave=False)):
   for i in (pbar := tqdm(range(n_matches), desc='Matches won: 0/0, Competitions won: 0/0', leave=False)):
     tg = RandomTeamFromRoster(roster)
     cm0.team = tg.get_team()
@@ -39,8 +41,6 @@ def main():
         match = BattleMatch(cm0, cm1, debug=debug)
         match.run()
         wins0 += match.winner() == 0
-        total_wins += match.winner() == 0
-        pbar.set_description(f'Matches won: {wins0}/{j}, Competitions won: {tot_wins}/{i}')
         total_wins += match.winner() == 0
         pbar.set_description(f'Matches won: {wins0}/{j}, Competitions won: {tot_wins}/{i}')
       tmp_team = cm0.team
