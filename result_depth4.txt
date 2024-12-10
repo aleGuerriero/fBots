@@ -1,0 +1,42 @@
+Vittorie su 50 matches divise in 5 competizioni
+
+late_game_factor = 4 if n_fainted(my_team) + n_fainted(opp_team) > 3 else 1.0
+return (match_up 
+        + late_game_factor * hp_ratio
+        + 0.3*my_stage
+        - 0.3*opp_stage
+        + 7 * (my_status - opp_status)
+        + 2 * late_game_factor * fainted_advantage
+        - 7 * depth)    
+        23 26 w
+
+  late_game_factor = 4 if n_fainted(my_team) + n_fainted(opp_team) > 3 else 1.0
+  return (match_up 
+          + late_game_factor * hp_ratio
+          + 0.3*my_stage
+          - 0.3*opp_stage
+          + 7 * (my_status - opp_status)
+          + 2 * late_game_factor * fainted_advantage
+          - 2 * depth) 
+        25 22 21 24 w
+
+late_game_factor = 4 if n_fainted(my_team) + n_fainted(opp_team) > 3 else 1.0
+return (match_up 
+        + late_game_factor * hp_ratio
+        + 0.3*my_stage
+        - 0.3*opp_stage
+        + 7 * (my_status - opp_status)
+        + 2 * late_game_factor * fainted_advantage
+        - depth)
+        24 23 18 24 w
+
+late_game_factor = 4 if n_fainted(my_team) + n_fainted(opp_team) > 3 else 1.0
+return (match_up 
+        + late_game_factor * hp_ratio
+        + 0.3*my_stage
+        - 0.3*opp_stage
+        + 7 * (my_status - opp_status)
+        + 2 * late_game_factor * fainted_advantage
+        - 6 * depth)
+        29 21 18 27 w
+

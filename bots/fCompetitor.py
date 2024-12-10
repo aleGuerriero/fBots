@@ -9,7 +9,7 @@ class fCompetitor(Competitor):
 
   def __init__(self, name: str = 'fCompetitor'):
     self._name = name
-    self._battle_policy = AlphaBetaPolicy()
+    self._battle_policy = AlphaBetaPolicy(max_depth=2)
     self._team_selection_policy = FirstEditionTeamSelectionPolicy()
     self._team_build_policy = RandomTeamBuilder()
 

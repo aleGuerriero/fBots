@@ -75,7 +75,7 @@ def status_eval(pkm: Pkm) -> float:
   else:
     return 0
   
-def game_state_eval(g: GameState):
+def game_state_eval(g: GameState, depth:int):
   my_team = g.teams[0]
   opp_team  = g.teams[1]
   my_active: Pkm = my_team.active
@@ -88,13 +88,17 @@ def game_state_eval(g: GameState):
   opp_stage = stage_eval(opp_team)
   my_status = status_eval(my_active)
   opp_status = status_eval(opp_active)
+  fainted_advantage = (3 - n_fainted(my_team)) - (3 - n_fainted(opp_team))
+  hp_ratio = my_active.hp / my_active.max_hp - opp_active.hp / opp_active.max_hp
+  
+  late_game_factor = 1 + 0.5 * (n_fainted(my_team) + n_fainted(opp_team))
   return (match_up 
-          + my_active.hp/my_active.max_hp
-          - opp_active.hp/opp_active.max_hp
-          + 0.2*my_stage
-          - 0.2*opp_stage
-          + my_status
-          - opp_status)
+          + late_game_factor * hp_ratio
+          + 0.3 * my_stage
+          - 0.3 * opp_stage
+          + 7 * (my_status - opp_status)
+          + 10 * late_game_factor * fainted_advantage
+          - 10 * depth)
 
 def n_fainted(team: PkmTeam) -> int:
   fainted = 0
@@ -177,7 +181,7 @@ class AlphaBetaPolicy(BattlePolicy):
     """
 
     state: GameState = deepcopy(node.gameState)
-    node.value = game_state_eval(state)
+    node.value = game_state_eval(state, node.depth)
     # print('---------------------------------')
     # print(f'CURRENT NODE: {str(node)}')
     # print('---------------------------------')
