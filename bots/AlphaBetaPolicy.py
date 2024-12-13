@@ -53,10 +53,9 @@ def estimate_move(pkm: Pkm) -> None:
   for move_i in range(DEFAULT_N_ACTIONS-2):
     if pkm.moves[move_i].name is None:
       # se non è presente una mossa del tipo del pkm allora ne aggiungo una random
-      # forse potrebbe convenire aggiungere la più potente pensando al caso pessimo ed alla propria incolumità 
-      # tanto gli algoritmi avversari sono greedy sul danno
+      # prendo in considerazione solo mosse di attacco, che sono quelle che mi preoccupano di più
       if type_m==0:
-        type_moves = [move for move in STANDARD_MOVE_ROSTER if move.type==pkm.type]
+        type_moves = [move for move in STANDARD_MOVE_ROSTER if move.type==pkm.type and move.power>0.0]
         pkm.moves[move_i] = random.choice(type_moves)
         type_m = 1
       else:
@@ -149,7 +148,6 @@ class AlphaBetaPolicy(BattlePolicy):
       beta: float
   ) -> tuple[float, Union[int, None]]:
     state: GameState = deepcopy(node.gameState)
-    node.value = game_state_eval(state, node.depth)
     # print('---------------------------------')
     # print(f'CURRENT NODE: {str(node)}')
     # print('---------------------------------')
@@ -182,11 +180,8 @@ class AlphaBetaPolicy(BattlePolicy):
       beta: float
   ) -> tuple[float, Union[int, None]]:
     state: GameState = deepcopy(node.gameState)
-    if state.teams[1].active.hp == 0 or state.teams[0].active.hp == 0 or node.depth >= self.max_depth:
-      return game_state_eval(state, node.depth), None
     value = np.inf
     for i in range(DEFAULT_N_ACTIONS):
-      estimate_move(state.teams[1].active)
       next_state, _, _, _, _ = state.step([node.action, i])
       next_node: Node = Node()
       next_node.parent = node
