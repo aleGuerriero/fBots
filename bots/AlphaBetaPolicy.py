@@ -118,7 +118,7 @@ class AlphaBetaPolicy(BattlePolicy):
     self.max_depth = max_depth
     random.seed(seed)
 
-  def get_action(self, g: Union[List[float], GameState]) -> int:
+  def get_action(self, g: GameState) -> int:
     root: Node = Node()
     root.gameState = g
 
@@ -129,7 +129,9 @@ class AlphaBetaPolicy(BattlePolicy):
     # print('OPPONENT PKM')
     # print(g.teams[1])
     # print('---------------------------------')
-
+    
+    # stimo delle mosse dell'avversario che non conosco
+    estimate_move(root.gameState.teams[1].active)
     action = self._alphaBeta_search(root)
     return action
 
