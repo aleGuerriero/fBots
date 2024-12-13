@@ -121,7 +121,7 @@ def calculateDamages(attack1:int, defense2:int, pkm1:Pkm, pkm2:Pkm, weather:Weat
 
 class GreedyPolicy(BattlePolicy):
 
-  def get_action(self, g: GameState]) -> int:
+  def get_action(self, g: GameState) -> int:
     return self._simple_search(g)
 
   def _simple_search(self, g: GameState) -> int:
