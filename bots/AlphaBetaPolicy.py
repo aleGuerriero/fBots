@@ -72,7 +72,12 @@ def status_eval(pkm: Pkm) -> float:
     return -0.5
   else:
     return 0
-  
+
+def stage_eval(team: PkmTeam) -> int:
+  stage: int = 0
+  for s in team.stage:
+    stage += s
+  return stage
 
 def game_state_eval(g: GameState, depth: int):
   my_team = g.teams[0]
