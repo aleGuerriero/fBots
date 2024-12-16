@@ -13,13 +13,16 @@ from vgc.util.generator.PkmRosterGenerators import RandomPkmRosterGenerator
 from vgc.util.generator.PkmTeamGenerators import RandomTeamFromRoster
 
 from vgc.behaviour.BattlePolicies import TerminalPlayer, Minimax, PrunedBFS
+import pandas as pd
 
 def main():
+  max_depth = 2
   n_matches: int = 5
   debug: bool = False
-
+  our_policy = "Mixed"
+  opp_policy = "Thunder"
   c0 = fCompetitor('Player1')
-  c0._battle_policy = AlphaBetaPolicy(max_depth=6)
+  c0._battle_policy = MixedPolicy(max_depth)
   cm0 = CompetitorManager(c0)
   c1 = fCompetitor('Player2')
   c1._battle_policy = ThunderPlayer()
@@ -51,7 +54,19 @@ def main():
     tot_wins += wins0 > 5
     tot_ties += wins0 == 5
 
+  write_results(our_policy, opp_policy, round(max_depth,0), round((total_wins*10)/n_matches, 3), tot_wins)
+
+
+
   print(f'{c0.name} won {tot_wins}/{n_matches}, tied {tot_ties}/{n_matches} and lost {n_matches-tot_ties-tot_wins}/{n_matches} competitions. \nTotal battle wins: {total_wins}')
+
+
+def write_results(our_policy, opp_policy, max_depth, tot_wins, total_wins):
+  res = pd.read_csv('results.csv')
+  res.loc[len(res)] = [our_policy, opp_policy, max_depth, tot_wins, total_wins]
+  res.to_csv("results.csv", index=False)
+
 
 if __name__=='__main__':
   main()
+
