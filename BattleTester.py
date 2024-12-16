@@ -16,10 +16,11 @@ from vgc.behaviour.BattlePolicies import TerminalPlayer, Minimax, PrunedBFS
 import pandas as pd
 
 def main():
-  max_depth = 2
+  max_depth = 2 #write the depth (0 for greedy)
   n_matches: int = 5
   debug: bool = False
-  our_policy = "Mixed"
+  #write the policies you are testing
+  our_policy = "Mixed" 
   opp_policy = "Thunder"
   c0 = fCompetitor('Player1')
   c0._battle_policy = MixedPolicy(max_depth)
