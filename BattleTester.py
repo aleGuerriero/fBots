@@ -20,10 +20,10 @@ def main():
   n_matches: int = 5
   debug: bool = False
   #write the policies you are testing
-  our_policy = "Mixed" 
+  our_policy = "AlphaBeta" 
   opp_policy = "Thunder"
   c0 = fCompetitor('Player1')
-  c0._battle_policy = MixedPolicy(max_depth)
+  c0._battle_policy = AlphaBetaPolicy(max_depth)
   cm0 = CompetitorManager(c0)
   c1 = fCompetitor('Player2')
   c1._battle_policy = ThunderPlayer()
@@ -65,7 +65,8 @@ def main():
 def write_results(our_policy, opp_policy, max_depth, tot_wins, total_wins):
   res = pd.read_csv('results.csv')
   res.loc[len(res)] = [our_policy, opp_policy, max_depth, tot_wins, total_wins]
-  res.to_csv("results.csv", index=False)
+  sorted_res = res.sort_values(by=["our_policy", "max_depth", "opp_policy"])
+  sorted_res.to_csv("results.csv", index=False)
 
 
 if __name__=='__main__':
