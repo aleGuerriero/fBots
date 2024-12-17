@@ -16,7 +16,7 @@ from vgc.behaviour.BattlePolicies import TerminalPlayer, Minimax, PrunedBFS
 import pandas as pd
 
 def main():
-  max_depth = 2 #write the depth (0 for greedy)
+  max_depth = 6 #write the depth (0 for greedy)
   n_matches: int = 5
   debug: bool = False
   #write the policies you are testing
@@ -56,8 +56,6 @@ def main():
     tot_ties += wins0 == 5
 
   write_results(our_policy, opp_policy, round(max_depth,0), round((total_wins*10)/n_matches, 3), tot_wins)
-
-
 
   print(f'{c0.name} won {tot_wins}/{n_matches}, tied {tot_ties}/{n_matches} and lost {n_matches-tot_ties-tot_wins}/{n_matches} competitions. \nTotal battle wins: {total_wins}')
 
