@@ -14,16 +14,17 @@ from vgc.util.generator.PkmTeamGenerators import RandomTeamFromRoster
 
 from vgc.behaviour.BattlePolicies import TerminalPlayer, Minimax, PrunedBFS
 import pandas as pd
+import numpy as np
 
 def main():
-  max_depth = 6 #write the depth (0 for greedy)
+  max_depth = np.nan #write the depth (np.nan for greedy)
   n_matches: int = 5
   debug: bool = False
   #write the policies you are testing
-  our_policy = "AlphaBeta" 
+  our_policy = "Greedy" 
   opp_policy = "Thunder"
   c0 = fCompetitor('Player1')
-  c0._battle_policy = AlphaBetaPolicy(max_depth)
+  c0._battle_policy = GreedyPolicy()
   cm0 = CompetitorManager(c0)
   c1 = fCompetitor('Player2')
   c1._battle_policy = ThunderPlayer()
@@ -65,7 +66,6 @@ def write_results(our_policy, opp_policy, max_depth, tot_wins, total_wins):
   res.loc[len(res)] = [our_policy, opp_policy, max_depth, tot_wins, total_wins]
   sorted_res = res.sort_values(by=["our_policy", "max_depth", "opp_policy"])
   sorted_res.to_csv("results.csv", index=False)
-
 
 if __name__=='__main__':
   main()
