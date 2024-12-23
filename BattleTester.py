@@ -24,7 +24,7 @@ def main():
   our_policy = "AlphaBeta" 
   opp_policy = "Thunder"
   c0 = fCompetitor('Player1')
-  c0._battle_policy = AlphaBetaPolicy()
+  c0._battle_policy = AlphaBetaPolicy(max_depth)
   cm0 = CompetitorManager(c0)
   c1 = fCompetitor('Player2')
   c1._battle_policy = ThunderPlayer()
