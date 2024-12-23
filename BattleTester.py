@@ -17,14 +17,14 @@ import pandas as pd
 import numpy as np
 
 def main():
-  max_depth = np.nan #write the depth (np.nan for greedy)
+  max_depth = 2 #write the depth (np.nan for greedy)
   n_matches: int = 5
   debug: bool = False
   #write the policies you are testing
-  our_policy = "Greedy" 
+  our_policy = "AlphaBeta" 
   opp_policy = "Thunder"
   c0 = fCompetitor('Player1')
-  c0._battle_policy = GreedyPolicy()
+  c0._battle_policy = AlphaBetaPolicy()
   cm0 = CompetitorManager(c0)
   c1 = fCompetitor('Player2')
   c1._battle_policy = ThunderPlayer()
