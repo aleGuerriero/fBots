@@ -21,10 +21,10 @@ def main():
   n_matches: int = 5
   debug: bool = False
   #write the policies you are testing
-  our_policy = "AlphaBeta" 
+  our_policy = "Mixed" 
   opp_policy = "Thunder"
   c0 = fCompetitor('Player1')
-  c0._battle_policy = AlphaBetaPolicy(max_depth)
+  c0._battle_policy = MixedPolicy(max_depth)
   cm0 = CompetitorManager(c0)
   c1 = fCompetitor('Player2')
   c1._battle_policy = ThunderPlayer()
