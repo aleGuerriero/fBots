@@ -17,17 +17,21 @@ import pandas as pd
 import numpy as np
 
 def main():
-  max_depth = 2 #write the depth (np.nan for greedy)
   n_matches: int = 5
   debug: bool = False
-  #write the policies you are testing
-  our_policy = "Mixed" 
-  opp_policy = "Thunder"
   c0 = fCompetitor('Player1')
-  c0._battle_policy = MixedPolicy(max_depth)
-  cm0 = CompetitorManager(c0)
   c1 = fCompetitor('Player2')
+
+  #write the policies you are testing (AlphaBeta, Mixed, Greedy)
+  our_policy = "AlphaBeta" 
+  opp_policy = "Thunder"
+  #write the depth (np.nan for greedy)
+  max_depth = 4 
+  #assing policies to competitors
+  c0._battle_policy = AlphaBetaPolicy(max_depth)
   c1._battle_policy = ThunderPlayer()
+
+  cm0 = CompetitorManager(c0)
   cm1 = CompetitorManager(c1)
   roster = RandomPkmRosterGenerator().gen_roster()
   
@@ -66,6 +70,19 @@ def write_results(our_policy, opp_policy, max_depth, tot_wins, total_wins):
   res.loc[len(res)] = [our_policy, opp_policy, max_depth, tot_wins, total_wins]
   sorted_res = res.sort_values(by=["our_policy", "max_depth", "opp_policy"])
   sorted_res.to_csv("results.csv", index=False)
+  sorted_res['max_depth'] = sorted_res['max_depth'].fillna(0) 
+  # Raggruppa per ogni accoppiamento e calcola la media e il conteggio
+  means = (
+      sorted_res.groupby(["our_policy", "max_depth","opp_policy"])
+      .agg(
+          mean_perc_matches_wins=("%_matches_wins", "mean"),
+          counts=("%_matches_wins", "count"),
+          mean_comp_wins=("competitions_wins", "mean")
+      )
+      .reset_index()
+  )
+  print(means)
+  means.to_csv("risultati_aggregati.csv", index=False)
 
 if __name__=='__main__':
   main()
