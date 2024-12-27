@@ -1,8 +1,8 @@
 our_policy,max_depth,opp_policy,mean_perc_matches_wins,counts,mean_comp_wins
 AlphaBeta,2.0,Thunder,31.32,50,0.24
-AlphaBeta,4.0,Thunder,37.28,25,0.2
+AlphaBeta,4.0,Thunder,36.6875,32,0.25
 AlphaBeta,6.0,Thunder,40.18181818181818,11,0.5454545454545454
 Greedy,0.0,Thunder,36.44,50,0.42
 Mixed,2.0,Thunder,40.72,50,0.76
 Mixed,4.0,Thunder,43.16,50,0.82
-Mixed,6.0,Thunder,44.0,13,0.9230769230769231
+Mixed,6.0,Thunder,42.604651162790695,43,0.8604651162790697

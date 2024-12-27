@@ -23,12 +23,12 @@ def main():
   c1 = fCompetitor('Player2')
 
   #write the policies you are testing (AlphaBeta, Mixed, Greedy)
-  our_policy = "AlphaBeta" 
+  our_policy = "Mixed" 
   opp_policy = "Thunder"
-  #write the depth (np.nan for greedy)
-  max_depth = 4 
+  #write the depth (0 for greedy)
+  max_depth = 2
   #assing policies to competitors
-  c0._battle_policy = AlphaBetaPolicy(max_depth)
+  c0._battle_policy = MixedPolicy(max_depth)
   c1._battle_policy = ThunderPlayer()
 
   cm0 = CompetitorManager(c0)
