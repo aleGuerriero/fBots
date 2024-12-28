@@ -23,12 +23,12 @@ def main():
   c1 = fCompetitor('Player2')
 
   #write the policies you are testing (AlphaBeta, Mixed, Greedy)
-  our_policy = "AlphaBeta" 
+  our_policy = "Mixed" 
   opp_policy = "Hayo5"
   #write the depth (0 for greedy)
   max_depth = 2
   #assing policies to competitors
-  c0._battle_policy = AlphaBetaPolicy()
+  c0._battle_policy = MixedPolicy(max_depth)
   c1._battle_policy = hayo5_BattlePolicy()
 
   cm0 = CompetitorManager(c0)
@@ -72,7 +72,7 @@ def write_results(our_policy, opp_policy, max_depth, tot_wins, total_wins):
   sorted_res.to_csv("results.csv", index=False)
   # Raggruppa per ogni accoppiamento e calcola la media e il conteggio
   means = (
-      sorted_res.groupby(["opp_policy", "our_policy","max_depth"])
+      sorted_res.groupby(["opp_policy", "our_policy", "max_depth"])
       .agg(
           mean_perc_matches_wins=("%_matches_wins", "mean"),
           number_of_tests=("%_matches_wins", "count"),
@@ -84,5 +84,6 @@ def write_results(our_policy, opp_policy, max_depth, tot_wins, total_wins):
   means.to_csv("risultati_aggregati.csv", index=False)
 
 if __name__=='__main__':
-    main()
+    for i in range(10):
+      main()
 
