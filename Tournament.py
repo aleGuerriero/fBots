@@ -27,6 +27,8 @@ def main():
     c6 = fCompetitor('Player6') #MiniMax
     c7 = fCompetitor('Player7') #Thunder
     c8 = fCompetitor('Player8') #Hayo5
+    c9 = fCompetitor('Player9') #Mixed (6.0)
+    c10 = fCompetitor('Player10') #AlphaBeta (2.0)
 
     #assing policies to competitors
     c1._battle_policy = GreedyPolicy()
@@ -37,6 +39,8 @@ def main():
     c6._battle_policy = Minimax()
     c7._battle_policy = ThunderPlayer()
     c8._battle_policy = hayo5_BattlePolicy()
+    c9._battle_policy = MixedPolicy(6)
+    c10._battle_policy = AlphaBetaPolicy(2)
 
     cm1 = CompetitorManager(c1)
     cm2 = CompetitorManager(c2)
@@ -46,6 +50,8 @@ def main():
     cm6 = CompetitorManager(c6)
     cm7 = CompetitorManager(c7)
     cm8 = CompetitorManager(c8)
+    cm9 = CompetitorManager(c9)
+    cm10 = CompetitorManager(c10)
     
     roster = RandomPkmRosterGenerator().gen_roster()
     tg = RandomTeamFromRoster(roster)
@@ -58,13 +64,19 @@ def main():
     cm6.team = tg.get_team()
     cm7.team = tg.get_team()
     cm8.team = tg.get_team()
+    cm9.team = tg.get_team()
+    cm10.team = tg.get_team()
 
-    T = Tournament([[cm1, "Greedy"], [cm2,"AlphaBeta4"], [cm3,"Mixed2"], [cm4,"Mixed4"],
-                            [cm5,"PrunedBFS"], [cm6,"MiniMax"], [cm7, "Thuder"],[cm8,"Hayo5"]])
+    T = Tournament([[cm1, "Greedy"], [cm2,"AlphaBeta4"], [cm3,"Mixed2"], [cm4,"Mixed4"], [cm5,"PrunedBFS"], 
+                    [cm6,"MiniMax"], [cm7, "Thuder"],[cm8,"Hayo5"], [cm9,"Mixed6"],[cm10,"AlphaBeta2"]])
+    
     results = T.start_tournament()
     print(f"Results: {results}")
     df = pd.DataFrame(list(results.items()), columns=['Policy', 'Score'])
-    df.to_csv('Tournament.csv')
+    standings = df.sort_values(["Score"], ascending=False).reset_index(drop=True)
+    standings.index = standings.index + 1
+    print(standings)
+    standings.to_csv('tournament4.csv', index_label="Rank")
 
 class Tournament():
 
