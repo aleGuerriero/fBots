@@ -67,8 +67,8 @@ def main():
     cm9.team = tg.get_team()
     cm10.team = tg.get_team()
 
-    T = Tournament([[cm1, "Greedy"], [cm2,"AlphaBeta4"], [cm3,"Mixed2"], [cm4,"Mixed4"], [cm5,"PrunedBFS"], 
-                    [cm6,"MiniMax"], [cm7, "Thuder"],[cm8,"Hayo5"], [cm9,"Mixed6"],[cm10,"AlphaBeta2"]])
+    T = Tournament([[cm1, "Greedy"], [cm2,"AlphaBeta4"], [cm5,"PrunedBFS"], 
+                     [cm7, "Thuder"],[cm8,"Hayo5"], [cm9,"Mixed6"]])
     
     results = T.start_tournament()
     print(f"Results: {results}")
@@ -76,7 +76,7 @@ def main():
     standings = df.sort_values(["Score"], ascending=False).reset_index(drop=True)
     standings.index = standings.index + 1
     print(standings)
-    standings.to_csv('tournament4.csv', index_label="Rank")
+    standings.to_csv('tournament7.csv', index_label="Rank")
 
 class Tournament():
 
